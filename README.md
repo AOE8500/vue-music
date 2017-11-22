@@ -1,4 +1,4 @@
-# vue.js开发音乐webApp
+# vue2.0开发音乐webApp
 
 > A Vue.js project
 
