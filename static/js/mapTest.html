@@ -1,0 +1,916 @@
+
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8" />
+    <title>Winfo API Test Page</title>
+</head>
+<body>
+    <div>Winfo WebGIS API Version4.0</div>
+    <input type='checkbox' id="ais" />AIS
+    <input type='checkbox' id="vts" />VTS
+    <input type='checkbox' id="merge" />X融合
+    <input type='checkbox' id="oldais" />old_AIS
+    &nbsp;    &nbsp;
+    <input type='checkbox' id="mousesurf" />经纬度坐标图层
+    <input type='checkbox' id="navtool" />平移缩放控件
+    <input type='checkbox' id="maptype" />模式转换控件
+    <input type='checkbox' id="mousetool" />鼠标控件
+    <input type='checkbox' id="scrshot" />截图控件
+    &nbsp;&nbsp;&nbsp;&nbsp;
+    <input value="自定义图层" onclick="draw()" type="button" />
+    <br><br>
+    <input value="标绘点" onclick="openMouseTooldrawPoint()" type="button" />
+    <input value="标绘圆" onclick="openMouseTooldrawCircle()" type="button" />
+    <input value="标绘矩形" onclick="openMouseTooldrawRectangle()" type="button" />
+    <input value="绘制折线" onclick="openMouseTooldrawPolyline()" type="button" />
+    <input value="绘制多边形" onclick="openMouseTooldrawPolygon()" type="button" />
+    <input value="测量距离" onclick="openMouseToolMeasure()" type="button" />
+    <input value="测量方位" onclick="openMouseTooldrawAzimuthCircle()" type="button" />
+    <input value="屏幕截图" onclick="winfoMap.ScreenShot()" type="button" />
+    <br><br>
+    <input type='checkbox' id="point" />点
+    <input type='checkbox' id="polyline" />线
+    <input type='checkbox' id="editpolyline" />编辑线
+    <input type='checkbox' id="polygon" />面
+    <input type='checkbox' id="editpolygon" />编辑面
+    <br>
+    <input value="添加圆覆盖物" onclick="addCircleOverlay()" type="button" />
+    <input value="编缉圆覆盖物" onclick="editCircleOverlay()" type="button" />
+    <input value="取消编缉圆盖物" onclick="endEditCircleOverlay()" type="button" />
+    <input value="删除圆覆盖物" onclick="removeCircleOverlay()" type="button" />
+    <input value="添加矩形覆盖物" onclick="addRectangleOverlay()" type="button" />
+    <input value="编缉矩形覆盖物" onclick="editRectangleOverlay()" type="button" />
+    <input value="删除矩形覆盖物" onclick="removeRectangleOverlay()" type="button" />
+    <input value="添加测量线" onclick="addMeasure()" type="button" />
+    <input value="删除测量线" onclick="removeMeasure()" type="button" />
+    <input value="添加方位圈" onclick="addAzimuthCircle()" type="button" />
+    <input value="删除方位圈" onclick="removeAzimuthCircle()" type="button" />
+    <br><br>
+    <input value="打开信息窗口" onclick="openInfoWindow()" type="button" />
+    <input value="打开信息窗口" onclick="openInfoWindow1()" type="button" />
+    <input value="显示在可视范围内" onclick="visualDisplay()" type="button" />
+    <input value="更新窗体内容" onclick="updateInfoWindow()" type="button" />
+    <input value="设置海图大小" onclick="setSize()" type="button" />
+    <input value="新的中心点" onclick="setCenter()" type="button" />
+    <input value="新的海图级别" onclick="setZoom()" type="button" />
+    <input value="放大海图" onclick="zoomIn()" type="button" />
+    <input value="缩小海图" onclick="zoomOut()" type="button" />
+    <input value="移动海图" onclick="panBy()" type="button" />
+    <input value="回放轨迹" onclick="getVesselTrack()" type="button" />
+    <input value="气压图" onclick="getPressure()" type="button" />
+    <input value="云图" onclick="getCloud()" type="button" />
+
+    <input value="获取最后位置" onclick="getLastAIS()" type="button" />
+    <br />
+    <br />
+    <div id="map" style="width: 900px; height: 600px; background: red;"></div>
+    运行日志：<span id="log"></span>
+    <a></a>
+</body>
+</html>
+
+<script src="http://192.168.0.203:2001/api/winfoapi.js" type="text/javascript"></script>
+<script src="http://192.168.0.203:2001/api/AISLayer.js" type="text/javascript"></script>
+
+<script language="javascript" type="text/javascript">
+    Winfo.SetEvent("ais", addAISLayer, removeAISLayer);
+    Winfo.SetEvent("vts", addVTSLayer, removeVTSLayer);
+    Winfo.SetEvent("merge", mergeAISVTSLayer, removeMergeLayer);
+    Winfo.SetEvent("oldais", oldAISLayer, removeOldAISLayer);
+    Winfo.SetEvent("navtool", addNavigationTool, removeNavigationTool);
+    Winfo.SetEvent("maptype", addMapTypeTool, removeMapTypeTool);
+    Winfo.SetEvent("mousesurf", addMouseSurface, removeMouseSurface);
+    Winfo.SetEvent("mousetool", addMouseTool, removeMouseTool);
+    Winfo.SetEvent("scrshot", addScreenShotTool, removeScreenShotTool);
+    Winfo.SetEvent("point", addPointOverlay, removePointOverlay);
+    Winfo.SetEvent("polyline", addPolylineOverlay, removePolylineOverlay);
+    Winfo.SetEvent("editpolyline", editPolylineOverlay, endEditPolylineOverlay);
+    Winfo.SetEvent("polygon", addPolygonOverlay, removePolygonOverlay);
+    Winfo.SetEvent("editpolygon", editPolygonOverlay, endEditPolygonOverlay);
+    Winfo.SetServiceURL("http://192.168.0.203:2001/", "http://192.168.0.203:2001/");
+
+    window.onload = function () {
+        winfoMap = new Winfo.WebDNC("map", { layer: 8, layername: 'TiandituENC', center: new Winfo.LngLat(113.85, 22.215), level: 10, zooms: [1, 18] });
+    }
+
+    var al = null;
+    function addAISLayer() {
+        //创建AIS图层
+        if (!al) {
+            al = new Winfo.DNCLayer.dynamic({ index: 401, ds: "AIS", url: dataURL, dataprocess: dataProcess, mouseover: mouseover, interval: 30 });
+        }
+        winfoMap.addLayer(al);
+    }
+    function removeAISLayer() {
+        winfoMap.removeLayer(al);
+    }
+
+    var vl = null;
+    function addVTSLayer() {
+        //创建VTS图层，作为静态自定义图层的例子
+        if (!vl) {
+            vl = new Winfo.DNCLayer.dynamic({ index: 301, ds: "VTS", url: dataURL, dataprocess: dataProcess, mouseover: mouseover});
+            vl.refresh();//静态图层时需要
+        }
+        winfoMap.addLayer(vl);
+    }
+    function removeVTSLayer() {
+        winfoMap.removeLayer(vl);
+    }
+
+    var aisLayer = null;
+    function oldAISLayer() {
+        //创建AIS图层
+        //index：叠加顺序 100
+        aisLayer = Winfo.DNCLayer.AIS({ index: 100 });
+        winfoMap.addLayer(aisLayer); //on
+    }
+    function removeOldAISLayer() {
+        winfoMap.removeLayer(aisLayer); //删除图层
+    }
+
+    function mergeAISVTSLayer() {
+        aisLayer.merge({ Layer: vtsLayer, close: false }); //AIS图层融合VTS图层
+    }
+    function removeMergeLayer() {
+        aisLayer.merge({ Layer: vtsLayer, close: true }); //关闭AIS/VTS融合
+    }
+
+    //创建经纬度显示图层
+    //index：叠加顺序 1000
+    var surfaceLayer = null;
+    function addMouseSurface() {
+        surfaceLayer = Winfo.DNCLayer.Surface({ index: 1000 });
+        winfoMap.addLayer(surfaceLayer);
+    }
+    function removeMouseSurface() {
+        surfaceLayer = Winfo.DNCLayer.Surface({ index: 1000 });
+        winfoMap.removeLayer(surfaceLayer);
+    }
+
+    var mouseTool = null;
+    function addMouseTool() {
+        if (mouseTool == null) {
+            //创建鼠标控件
+            mouseTool = new Winfo.MouseTool();
+            winfoMap.addControl(mouseTool); //添加控件
+            mouseTool.clickQuery({}, clickCallback);//开启鼠标控件的单击查询事件
+        }
+    }
+    function removeMouseTool() {
+        winfoMap.removeControl(mouseTool); //删除控件
+        mouseTool = null;
+    }
+    var mapTypeTool = null;
+    function addMapTypeTool() {
+        //创建模式转换控件
+        mapTypeTool = new Winfo.MapType();
+        winfoMap.addControl(mapTypeTool); //添加控件
+    }
+    function removeMapTypeTool() {
+        winfoMap.removeControl(mapTypeTool); //删除控件
+    }
+
+    var screenShot = null;
+    function addScreenShotTool() {
+        //创建屏幕截图控件
+        screenShot = new Winfo.ScreenShot();
+        winfoMap.addControl(screenShot); //添加控件
+    }
+    function removeScreenShotTool() {
+        winfoMap.removeControl(screenShot); //删除控件
+    }
+    var navigation = null;
+    function addNavigationTool() {
+            //创建平移缩放控件
+            navigation = new Winfo.Navigation();
+            winfoMap.addControl(navigation); //添加控件
+    }
+    function removeNavigationTool() {
+        winfoMap.removeControl(navigation); //删除控件
+    }
+
+    var marker = null;
+    function addPointOverlay() {
+        //创建点覆盖物
+        //点覆盖物参数
+        //title 鼠标移入覆盖物显示样式
+        //position 覆盖物显示位置 Winfo.LngLat 对象
+        //draggable 是否可以移动的物标（true/false）
+        //icon:物标显示的图标 Winfo.Icon 对象
+        //content 物标显示的内容 Winfo.MarkerContent对象
+        //offset:物标偏移量 Winfo.Pixel 对象
+        var lon = winfoMap.getCenter().lng;
+        var lat = winfoMap.getCenter().lat;
+        marker = new Winfo.Marker({ title: "鼠标压到我啦....", position: new Winfo.LngLat(lon, lat), draggable: true, content: new Winfo.MarkerContent({ content: "<div style='color:#ffffff; font-size:12px;'><b>MARKER</b></div>", offset: new Winfo.Pixel(0, 0), cover: true }), icon: new Winfo.Icon({ size: new Winfo.Size(24, 24), image: "http://localhost:8080/Resources/Map/marker_sprite.png", offset: new Winfo.Pixel(-12, -24) }) });
+        winfoMap.addOverlay(marker); //添加覆盖物
+        //注册覆盖物的点击事件
+        marker.click(function (event) {
+            alert(event.data.panweilong);
+        });
+        //创建信息显示窗口
+        // size：窗体大小 Winfo.Size 对象
+        // offset: 船体便宜量 Winfo.Pixel 对象
+        //content： 窗体内容
+        inforWindow = new Winfo.InfoWindow({
+            size: new Winfo.Size(100, 80),
+            offset: new Winfo.Pixel(0, -20),
+            content: "你好"  //使用默认信息窗体框样式，显示信息内容
+        });
+        //注册覆盖物鼠标移入事件
+        marker.mouseover(function (event) {
+            inforWindow.open(event.lnglat);
+            return false;
+        });
+        //注册覆盖物鼠标移出事件
+        marker.mouseout(function (event) {
+            inforWindow.close();
+            return false;
+        });
+        //注册覆盖物移动时事件
+        marker.dragging(function (event) {
+            inforWindow.setPosition(event.lnglat);
+            $("#log").html(event.lnglat.getLat() + "," + event.lnglat.getLng());
+        });
+        winfoMap.setCenter(new Winfo.LngLat(lon, lat));
+    }
+    function removePointOverlay() {
+        winfoMap.removeOverlay(marker); //删除覆盖物
+    }
+
+    var rectangle = null;
+    function addRectangleOverlay() {
+        //创建矩形覆盖物
+        //position：矩形覆盖物的定位点 Winfo.LngLat 对象
+        //size: 矩形覆盖物的大小 Winfo.Size 对象
+        var lon = winfoMap.getCenter().lng;
+        var lat = winfoMap.getCenter().lat;
+        rectangle = new Winfo.Rectangle({ position: new Winfo.LngLat(lon, lat), size: new Winfo.Size(100, 100), positioning: "center" });
+        winfoMap.addOverlay(rectangle); //添加覆盖物
+    }
+    var editRectangle = null;
+    function editRectangleOverlay() {
+        editRectangle = new Winfo.RectangleEditor(rectangle);
+        winfoMap.addOverlay(editRectangle);
+        editRectangle.adjust(function (event) {
+            var html = "LT:" + event.lnglat.lng.toFixed(7) + "," + event.lnglat.lat.toFixed(7) + ",RB:" + event.rlnglat.lng.toFixed(7) + "," + event.rlnglat.lat.toFixed(7);
+            html += "  width:" + event.size.getWidth() + "px,height:" + event.size.getHeight() + "px";
+            $("#log").html(html);
+        });
+        editRectangle.dragstart(function (event) {
+        });
+        editRectangle.dragging(function (event) {
+            var html = "LT:" + event.lnglat.lng.toFixed(7) + "," + event.lnglat.lat.toFixed(7) + ",RB:" + event.object.editor.rlnglat.lng.toFixed(7) + "," + event.object.editor.rlnglat.lat.toFixed(7);
+            html += "  width:" + event.size.getWidth() + "px,height:" + event.size.getHeight() + "px";
+            $("#log").html(html);
+        });
+        editRectangle.dragend(function (event) {
+            var html = "LT:" + event.lnglat.lng.toFixed(7) + "," + event.lnglat.lat.toFixed(7) + ",RB:" + event.rlnglat.lng.toFixed(7) + "," + event.rlnglat.lat.toFixed(7);
+            html += "  width:" + event.size.getWidth() + "px,height:" + event.size.getHeight() + "px";
+            $("#log").html(html);
+        });
+    }
+    function removeRectangleOverlay() {
+        winfoMap.removeOverlay(rectangle); //删除覆盖物
+    }
+
+    var circle = null;
+    function addCircleOverlay() {
+        //创建圆形覆盖物
+        //strokeColor：圆形覆盖物的线条颜色
+        //strokeOpacity: 线条透明度
+        //strokeWeight 线条宽度
+        //strokeStyle 线条样式 （dashed:虚线、solid：实线）
+        // strokeDasharray 线条间隙
+        //fillColor 填充颜色
+        //fillOpacity 填充透明度
+        //center 圆形中心点 Winfo.LngLat 对象
+        //radius 圆形半径  Number(单位：像素)
+        var lon = winfoMap.getCenter().lng;
+        var lat = winfoMap.getCenter().lat;
+        circle = new Winfo.Circle({ strokeColor: "#000000", strokeOpacity: 1, strokeWeight: 0, strokeStyle: "dashed", strokeDasharray: "1 5 0", fillColor: "#ffffff", fillOpacity: 0.5, center: new Winfo.LngLat(lon, lat), radius: 100 });
+        winfoMap.addOverlay(circle); //添加对象
+    }
+    var editCircle = null;
+    function editCircleOverlay() {
+        //创建 圆形编缉器
+        //circle  需要编缉的圆形
+        editCircle = new Winfo.CircleEditor(circle);
+        winfoMap.addOverlay(editCircle); //将编辑器覆盖物 添加到海图
+
+        //当圆形 半径发生改变时发生
+        editCircle.adjust(function (event) {
+            var r = event.radius;
+            $("#log").html("圆,radius:" + r.toFixed(0) + "px");
+        });
+
+        //当圆形中心点移动时触发事件
+        editCircle.move(function (event) {
+        });
+
+    }
+    function endEditCircleOverlay() {
+        winfoMap.removeOverlay(editCircle); //删除对象 编缉器
+    }
+    function removeCircleOverlay() {
+        winfoMap.removeOverlay(circle); //删除对象
+    }
+
+        var azimuthCircle = null;
+        function addAzimuthCircle() {
+
+            //创建方位圈对象
+            //strokeColor线条颜色
+            //strokeOpacity: 线条透明度
+            //strokeWeight 线条宽度
+            //strokeStyle 线条样式 （dashed:虚线、solid：实线）
+            // strokeDasharray 线条间隙
+            //fillColor 填充颜色
+            //fillOpacity 填充透明度
+            //center 方位圈中心点 Winfo.LngLat 对象
+            //direction 方位点 Winfo.LngLat 对象
+            azimuthCircle = new Winfo.AzimuthCircle({ strokeColor: "#000000", strokeOpacity: 1, strokeWeight: 6, strokeStyle: "dashed", strokeDasharray: "1 1 1", fillColor: "#ffffff", fillOpacity: 0.5, center: new Winfo.LngLat(113.1, 22.1), direction: new Winfo.LngLat(113.2, 22.2) });
+            winfoMap.addOverlay(azimuthCircle); //添加覆盖物
+        }
+
+        function removeAzimuthCircle() {
+            winfoMap.removeOverlay(azimuthCircle); //删除覆盖物
+        }
+
+        var polyline = null;
+        function addPolylineOverlay() {
+            //创建折线对象
+            //strokeColor线条颜色
+            //strokeOpacity: 线条透明度
+            //strokeWeight 线条宽度
+            //strokeStyle 线条样式 （dashed:虚线、solid：实线）
+            //strokeDasharray 线条间隙
+            //path 折线点数组，数组对象为Winfo.LngLat
+
+            polyline = new Winfo.Polyline({ strokeColor: "#000000", strokeOpacity: 1, strokeWeight: 10, strokeDasharray: "1 1", path: [new Winfo.LngLat(113.1, 22.1), new Winfo.LngLat(113.12, 22.2), new Winfo.LngLat(113.14, 22.1), new Winfo.LngLat(113.2, 22.1)] });
+            winfoMap.addOverlay(polyline); //添加覆盖物
+            //注册单击事件
+            polyline.click(function (event) {
+                //alert(event.path);
+            })
+            //注册鼠标移入事件
+            polyline.mouseover(function (event) {
+                //alert(event.path);
+            });
+        }
+
+        var polyEditorline = null;
+        function editPolylineOverlay() {
+            polyEditorline = Winfo.PolyEditor(polyline);
+            winfoMap.addOverlay(polyEditorline);
+
+        }
+
+        function endEditPolylineOverlay() {
+            winfoMap.removeOverlay(polyEditorline);
+
+        }
+
+
+        function removePolylineOverlay() {
+            winfoMap.removeOverlay(polyline); //删除覆盖物
+        }
+
+        var measure = null;
+        function addMeasure() {
+            //创建测量线覆盖物
+
+            //path 测量线点数组，数组对象为Winfo.LngLat
+            measure = new Winfo.Measure({ path: [new Winfo.LngLat(113.1, 22.1), new Winfo.LngLat(113.12, 22.2), new Winfo.LngLat(113.14, 22.1), new Winfo.LngLat(113.2, 22.1)] });
+            winfoMap.addOverlay(measure); //添加覆盖物
+        }
+
+        function removeMeasure() {
+            winfoMap.removeOverlay(measure); //删除覆盖物
+        }
+
+
+
+        var polygon = null;
+        function addPolygonOverlay() {
+            //创建多边形对象
+            //strokeColor线条颜色
+            //strokeOpacity: 线条透明度
+            //strokeWeight 线条宽度
+            //strokeStyle 线条样式 （dashed:虚线、solid：实线）
+            // strokeDasharray 线条间隙
+            //fillColor 填充颜色
+            //fillOpacity 填充透明度
+            //path 多边形点数组，数组对象为Winfo.LngLat
+            polygon = new Winfo.Polygon({ strokeColor: "#00ff00", strokeOpacity: 1, strokeWeight: 2, strokeStyle: "dashed", strokeDasharray: "1 5 0", fillColor: "#f0f000", fillOpacity: 0.5, path: [new Winfo.LngLat(113.1, 22.1), new Winfo.LngLat(113.12, 22.2), new Winfo.LngLat(113.14, 22.1), new Winfo.LngLat(113.2, 22.1)] });
+            winfoMap.addOverlay(polygon); //添加覆盖物
+        }
+        function removePolygonOverlay() {
+            winfoMap.removeOverlay(polygon); //删除覆盖物
+        }
+
+
+        function editPolygonOverlay() {
+            polyEditor = Winfo.PolyEditor(polygon);
+            winfoMap.addOverlay(polyEditor);
+        }
+
+
+        function endEditPolygonOverlay() {
+            winfoMap.removeOverlay(polyEditor);
+        }
+
+        function openMouseTooldrawPoint() {
+            if (mouseTool == null) {
+                //创建鼠标控件
+                mouseTool = new Winfo.MouseTool();
+                winfoMap.addControl(mouseTool); //添加控件
+            }
+
+            //开启鼠标控件标绘点物标
+            // 标绘参数 类似于 Marker，请参见Marker 参数
+            // function（data） 当绘制完成时 回调函书 data：绘制完成后的Marker 对象
+            mouseTool.drawPoint({ title: "鼠标压到我啦...", content: new Winfo.MarkerContent({ content: "<div style='color:red; font-size:12px;'><b>我的标注</b></div>", offset: new Winfo.Pixel(-15, 5), cover: false }) }, function (data) {
+                //alert(data);
+
+                var info = [];
+                info.push("<div><div></div> ");
+                info.push("<div style=\"padding:0px 0px 0px 4px;\"><b>闻迅软件</b>");
+                info.push("电话 : 0755-83417131   邮编 : 518000");
+                info.push("地址 : 深圳市南山区高新区北区新西路7号兰光科技大厦C605</div></div>");
+                inforWindow = null;
+
+                //创建信息显示窗口
+                // size：窗体大小 Winfo.Size 对象
+                // offset: 船体便宜量 Winfo.Pixel 对象
+                //content： 窗体内容
+                inforWindow = new Winfo.InfoWindow({
+                    size: new Winfo.Size(360, 180),
+                    offset: new Winfo.Pixel(0, -40),
+                    //content: info.join("<br/>")  //使用默认信息窗体框样式，显示信息内容
+                    content: "<table class='table' border='0' width='250' cellspacing='0' cellpadding='0' >  <tr class='headRow'>  <td colspan='2' style='height:20px;' id='titleInfo'>舢舨洲  水文实时数据</td>  </tr>  <tr class='dataTypeRow'>     <td>潮位286(厘米）</td>      <td>水温4.94(摄氏度）</td>  </tr>  <tr class='dateRow'>     <td>2013-12-10 16:12</td>    <td>2013-12-10 16:12</td>  </tr>  <tr class='dataTypeRow'>     <td>能见度4(公里）</td>      <td>风速46.49(米/秒）</td>  </tr>  <tr class='dateRow'>     <td>2013-12-10 16:12</td>    <td>2013-12-10 16:12</td>  </tr>  <tr class='dataTypeRow'>     <td>风向398(度）</td>    <td>&nbsp;</td>;  </tr>  <tr class='dateRow'>     <td>2013-12-10 16:12</td>    <td>&nbsp;</td>  </tr></table>"
+                });
+                inforWindow.open(data.lnglat); //打开信息窗体
+                inforWindow.visualDisplay();
+                data.dragstart(function (event) {
+                    inforWindow.close();
+                    $("#log").html(event.lnglat.getLat() + "," + event.lnglat.getLng());
+                });
+                data.dragging(function (event) {
+                    //                    inforWindow.setPosition(event.lnglat);
+                    //                    $("#log").html(event.lnglat.getLat() + "," + event.lnglat.getLng());
+                });
+                data.dragend(function (event) {
+                    inforWindow.open(event.lnglat);
+                    inforWindow.visualDisplay();
+                    $("#log").html(event.lnglat.getLat() + "," + event.lnglat.getLng());
+                });
+            });
+        }
+
+
+        function openMouseTooldrawCircle() {
+            if (mouseTool == null) {
+                //创建鼠标控件
+                mouseTool = new Winfo.MouseTool();
+                winfoMap.addControl(mouseTool); //添加控件
+            }
+            //开启鼠标控件标绘圆物标
+            // 标绘参数 类似于 Circle，请参见Circle 参数
+            // function（data） 当绘制完成时 回调函书 data：绘制完成后的Circle 对象
+            mouseTool.drawCircle({}, function (data) {
+                alert(data);
+            });
+        }
+
+        function openMouseTooldrawRectangle() {
+            if (mouseTool == null) {
+                //创建鼠标控件
+                mouseTool = new Winfo.MouseTool();
+                winfoMap.addControl(mouseTool); //添加控件
+
+            }
+            //开启鼠标控件标绘矩形物标标
+            // 标绘参数 类似于 Rectangle ，请参见Rectangle 参数
+            // function（data） 当绘制完成时 回调函书 data：绘制完成后的  Rectangle 对象
+            mouseTool.drawRectangle({}, function (data) {
+                console.log(data);
+            });
+        }
+
+
+
+        function openMouseTooldrawAzimuthCircle() {
+
+            if (mouseTool == null) {
+                //创建鼠标控件
+                mouseTool = new Winfo.MouseTool();
+                winfoMap.addControl(mouseTool); //添加控件
+            }
+            //开启鼠标测量方位
+            // 标绘参数 类似于 AzimuthCircle，请参见AzimuthCircle 参数
+            // function（data） 当绘制完成时 回调函书 data：绘制完成后的  AzimuthCircle 对象
+            mouseTool.openAzimuthCircle({}, function (data) {
+                alert(data);
+            });
+
+        }
+
+
+
+        function openMouseTooldrawPolyline() {
+            if (mouseTool == null) {
+                //创建鼠标控件
+                mouseTool = new Winfo.MouseTool();
+                winfoMap.addControl(mouseTool); //添加控件
+            }
+            //开启鼠标绘制折线
+            // 标绘参数 类似于 Polyline，请参见Polyline 参数
+            // function（data） 当绘制完成时 回调函书 data：绘制完成后的  Polyline 对象
+            mouseTool.drawPolyline({}, function (data) {
+                alert(data);
+            });
+        }
+
+
+        function openMouseTooldrawPolygon() {
+            if (mouseTool == null) {
+                //创建鼠标控件
+                mouseTool = new Winfo.MouseTool();
+                winfoMap.addControl(mouseTool); //添加控件
+            }
+            //开启鼠标绘制多边形
+            // 标绘参数 类似于 Polygon，请参见Polygon 参数
+            // function（data） 当绘制完成时 回调函书 data：绘制完成后的  Polyline 对象
+            mouseTool.drawPolygon({}, function (data) {
+                alert(data);
+            });
+        }
+
+
+        function openMouseToolMeasure() {
+            if (mouseTool == null) {
+                //创建鼠标控件
+                mouseTool = new Winfo.MouseTool();
+                winfoMap.addControl(mouseTool); //添加控件
+            }
+            //开启鼠测量距离
+            // 标绘参数 类似于 Measure，Measure 参数
+            // function（data） 当绘制完成时 回调函书 data：绘制完成后的  Measure 对象
+            mouseTool.openMeasure({}, function (data) {
+                alert(data);
+            });
+        }
+
+
+
+
+
+        var inforWindow = null;
+        function openInfoWindow() {
+            var info = [];
+            info.push("<div><div></div> ");
+            info.push("<div style=\"padding:0px 0px 0px 4px;\"><b>闻迅软件</b>");
+            info.push("电话 : 0755-83417131   邮编 : 518000");
+            info.push("地址 : 深圳市南山区高新区北区新西路7号兰光科技大厦C605</div></div>");
+
+            //创建信息显示窗口
+            // size：窗体大小 Winfo.Size 对象
+            // offset: 船体便宜量 Winfo.Pixel 对象
+            //content： 窗体内容
+            inforWindow = new Winfo.InfoWindow({
+                size: new Winfo.Size(448, 200),
+                content: info.join("<br/>"),  //使用默认信息窗体框样式，显示信息内容
+                pointer: true
+            });
+            inforWindow.open(new Winfo.LngLat(113.1, 22.1)); //在经纬度为113.1，22.1的位置打开窗体
+
+        }
+        function openInfoWindow1() {
+
+
+            inforWindow.open(new Winfo.LngLat(113.1, 22.1)); //在经纬度为113.1，22.1的位置打开窗体
+
+        }
+
+        function visualDisplay() {
+
+
+            inforWindow.visualDisplay(); //显示在可视范围内
+
+        }
+
+
+
+        function updateInfoWindow() {
+            inforWindow.setOptions({
+                size: new Winfo.Size(200, 100),
+                content: "我的内容",  //使用默认信息窗体框样式，显示信息内容
+                pointer: false
+            });
+        }
+        function setSize() {
+
+            //设置海图大小
+            //param Winfo.Size 对象
+            winfoMap.setSize(new Winfo.Size(600, 500));
+
+
+        }
+
+
+        function setCenter() {
+            //设置中心点
+            //param Winfo.LngLat 对象
+            winfoMap.setCenter(new Winfo.LngLat(22.9, 113.2));
+
+        }
+
+        function setZoom() {
+            //设置级别
+            //param NUmber
+            winfoMap.setZoom(5);
+        }
+
+        function zoomIn() {
+            //放大一级
+            winfoMap.zoomIn();
+        }
+
+        function zoomOut() {
+            //缩小一级
+            winfoMap.zoomOut();
+        }
+
+
+        function panBy() {
+            //将海图移动距离
+            //param Winfo.Pixel 对象
+            // winfoMap.panBy(new Winfo.Pixel(500, 500));
+
+            //将海图移动到 某个点
+            //param Winfo.LngLat 对象
+            winfoMap.panTo(new Winfo.LngLat(113.2, 22.1));
+        }
+
+        var Tracklayer = null;
+        function getVesselTrack() {
+            if (Tracklayer == null) {
+                Tracklayer = new Winfo.DNCLayer.VesselTrack({ index: 1000 });
+                winfoMap.addLayer(Tracklayer);
+            }
+            Tracklayer.GetVesselTrackList({ filter: "MMSI=412501730,STARTTIME=2015-06-04,ENDTIME=2015-06-05" });
+        }
+
+
+        //显示气压图
+        function getPressure() {
+            var VectorLayers2 = new Winfo.DNCLayer.VectorLayers({
+                layername: "ciaVectorLayers",
+                url: "http://192.168.0.130:8010/wmts/GetTile?map=DNC",
+                paramX: '&x',
+                paramY: '&y',
+                paramZ: '&z',
+                layer: 6
+            });
+            winfoMap.addLayer(VectorLayers2); //添加图层
+        }
+        //显示云图
+        function getCloud() {
+            var vectorLayer = new Winfo.DNCLayer.ImageVectorLayer({
+                layername: "ImageVectorLayers"
+            });
+            winfoMap.addLayer(vectorLayer); //添加图层
+        }
+
+        //获取最后AIS位置
+        function getLastAIS() {
+            if (aisLayer == null) {
+                aisLayer = Winfo.DNCLayer.AIS({ index: 100 });
+            }
+            aisLayer.getList({ "filter": "MMSI=412472920" }, function (data) {
+                var datas = data.DATAS;
+                alert(datas);
+            });
+        }
+
+</script>
+
+<script language="javascript" type="text/javascript">
+    function clickCallback(data) {
+        if (data.length > 0) {
+            if (data[0].layer.name == "winfo.vessel.AIS.layer") {
+//              al.CheckObject(data[0].value[0]);
+         		data[0].layer.checkObject({ object: data[0].value[0] });// 选中目标
+                data[0].layer.getObject({ object: data[0].value[0] }, function (cbdata) {
+                   chuanbodata=cbdata;
+                   alert("cbdata:"+cbdata);
+                });
+                return;
+            }
+            if (data[0].layer.name == "winfo.vessel.VTS.layer") {
+                vl.CheckObject(data[0].value[0]);
+                return;
+            }
+        }
+    };
+    function dataURL(ds) {
+        var DATACONTENT = 0;
+        if (Winfo.DNCObject.getLevel() > 9) {
+            DATACONTENT = 1;
+        }
+        if (ds == "AIS") {
+            if (al) {
+                var center = winfoMap.getCenter();
+                var h = winfoMap.getSize().getHeight();
+                var url = winfodataservicepath + "DataService?VERSION=4.0&REQUEST=GetAISList&TRACKDATA=" + al.GetCheckList() + "&LEVEL=" + winfoMap.getLevel() + "&DATACONTENT=" + DATACONTENT + "&ReturnCoordinate=Screen&BBOX=" + lib.GetBBOX() + "&HEIGHT=" + h + "&LNG=" + center.lng.toFixed(9) + "&LAT=" + center.lat.toFixed(9) + "&JSONCALLBACK=?";
+                return url;
+            }
+        }
+        if (ds == "VTS") {
+            if (vl) {
+                var center = winfoMap.getCenter();
+                var h = winfoMap.getSize().getHeight();
+                var url = winfodataservicepath + "DataService?VERSION=4.0&REQUEST=GetVTSList&TRACKDATA=" + vl.GetCheckList() + "&LEVEL=" + winfoMap.getLevel() + "&DATACONTENT=" + DATACONTENT + "&ReturnCoordinate=Screen&BBOX=" + lib.GetBBOX() + "&HEIGHT=" + h + "&LNG=" + center.lng.toFixed(9) + "&LAT=" + center.lat.toFixed(9) + "&JSONCALLBACK=?";
+                return url;
+            }
+        }
+    };
+    function dataProcess(LAYER_DATA) {
+        if (!LAYER_DATA) return [];
+        console.log(LAYER_DATA)
+        var DATACONTENT = LAYER_DATA.PARAM.DATACONTENT;
+        var ds = LAYER_DATA.PARAM.datasource;
+        var ret = [];
+        var list = LAYER_DATA.DATAS;
+        for (var i = 0; i < list.length; i++) {
+            var data = list[i];
+            switch (DATACONTENT) {
+                case 0:
+                    var obj = {};
+                    obj.geometry = { "type": "ScreenPoint", "coordinates": [data.X, data.Y] };
+                    if (ds == "AIS") {
+                        obj.strokeStyle = "#ff0000";
+                        obj.fillStyle = "#ffff00";
+                    } else if (ds == "VTS") {
+                        obj.strokeStyle = "#000";
+                        obj.fillStyle = "#339933";
+                    }
+                    obj.radius = 2;
+                    ret.push(obj);
+                    break;
+                case 1:
+                    if (data.SOG > 0) {
+                        var obj = {};
+                        obj.geometry = { "type": "ScreenLine", "coordinates": [{ x: data.X, y: data.Y }, { x: data.Vx, y: data.Vy }] };
+                        obj.strokeWidth = 0.5;
+                        obj.globalAlpha = 0.8;
+                        obj.dashed = false;
+                        obj.strokeStyle = "#000000";
+                        ret.push(obj);
+                    }
+                    if (ds == "AIS" && al.IfChecked(data.MMSI) || ds == "VTS" && vl.IfChecked(data.TID)) {
+                        var obj = {};
+                        obj.geometry = { "type": "ScreenLine", "coordinates": [{ x: data.X - 15, y: data.Y - 15 }, { x: data.X - 15, y: data.Y + 15 }, { x: data.X + 15, y: data.Y + 15 }, { x: data.X + 15, y: data.Y - 15 }, { x: data.X - 15, y: data.Y - 15 }] };
+                        obj.strokeWidth = 1;
+                        obj.strokeStyle = "#ff0099";
+                        ret.push(obj);
+                        if (data.TRACKDATA.length > 1) {
+                            var obj = {};
+                            var coordinates = [];
+                            for (var n = 0; n < data.TRACKDATA.length; n++) {
+                                coordinates.push({ x: data.TRACKDATA[n].Tx, y: data.TRACKDATA[n].Ty });
+                            };
+                            obj.geometry = { "type": "ScreenLine", "coordinates": coordinates };
+                            obj.strokeWidth = 1;
+                            obj.globalAlpha = 0.2;
+                            obj.dashed = false;
+                            obj.strokeStyle = "red";
+                            ret.push(obj);
+                            for (var n = 0; n < data.TRACKDATA.length; n++) {
+                                var obj = {};
+                                obj.geometry = { "type": "ScreenPoint", "coordinates": [data.TRACKDATA[n].Tx, data.TRACKDATA[n].Ty] };
+                                obj.strokeStyle = "#00f0ff";
+                                obj.fillStyle = "#0000ff";
+                                obj.radius = 2.5;
+                                obj.data = data.TRACKDATA[n];
+                                obj.data.MMSI = data.MMSI;
+                                obj.data.NameEN = data.NameEN;
+                                ret.push(obj);
+                            };
+                        };
+                    };
+                    var obj = {};
+                    size = 19;
+                    obj.geometry = { "type": "ScreenPoint", "coordinates": [data.X, data.Y] };
+                    obj.rotate = data.COG;
+                    console.log(data)
+                    if (ds == "AIS") obj.icon = GetIconByVesselType(data.VesselType);
+                    if (ds == "VTS") {
+                        obj.strokeStyle = "#339933";
+                        obj.radius = 7;
+                    }
+                    obj.width = size;
+                    obj.height = size;
+                    obj.data = data;
+                    if (data.SBI && data.SBI.RSDATA && data.SBI.RSDATA.NameCN) {
+                        if (data.NameEN != data.SBI.RSDATA.NameEN) {
+                            obj.data.NameEN = data.NameEN + "(" + data.SBI.RSDATA.NameEN + ")";
+                        }
+                    }
+                    ret.push(obj);
+                    if (ds == "VTS") {
+                        var obj = {};
+                        obj.geometry = { "type": "ScreenPoint", "coordinates": [data.X, data.Y] };
+                        obj.strokeStyle = "#339933";
+                        obj.radius = 3;
+                        ret.push(obj);
+                    }
+                    break;
+            }
+        }
+        return ret;
+    };
+    function mouseover(obj, offset) {
+        var ret = [];
+        offset.x += 20;
+        offset.y += 20;
+        var H = 105;
+        var W = 255;
+        var face = { type: "face", strokeWidth: 1, strokeStyle: '#CCC', fillStyle: "#FFF", globalAlpha: 0.7, path: [{ x: offset.x, y: offset.y }, { x: offset.x + W, y: offset.y }, { x: offset.x + W, y: offset.y + H }, { x: offset.x, y: offset.y + H }] };
+        ret.push(face);
+        var h = 16;
+        var w = 15;
+        var line;
+        if (obj.datasource.MMSI) {
+            line = { type: "text", text: "MMSI：" + obj.datasource.MMSI, strokeWidth: 0.5, strokeStyle: '#CCC', globalAlpha: 0.8, fillStyle: "#000", path: [{ x: offset.x + w, y: offset.y + h }], fontSize: 12 };
+        }
+        if (obj.datasource.TID) {
+            line = { type: "text", text: "VTS TrackID：" + obj.datasource.TID, strokeWidth: 0.5, strokeStyle: '#CCC', globalAlpha: 0.8, fillStyle: "#000", path: [{ x: offset.x + w, y: offset.y + h }], fontSize: 12 };
+        }
+        ret.push(line);
+        line = { type: "text", text: "船名：" + obj.datasource.NameEN, strokeWidth: 0.5, strokeStyle: '#CCC', globalAlpha: 0.8, fillStyle: "#000", path: [{ x: offset.x + w, y: offset.y + 2 * h }], fontSize: 12 };
+        ret.push(line);
+        var coordinate = "经度：" + obj.datasource.Lon.toFixed(7);
+        coordinate += "    纬度：" + obj.datasource.Lat.toFixed(7);
+        line = { type: "text", text: coordinate, strokeWidth: 0.5, strokeStyle: '#CCC', globalAlpha: 0.8, fillStyle: "#000", path: [{ x: offset.x + w, y: offset.y + 3 * h }], fontSize: 12 };
+        ret.push(line);
+        var state = "航向：" + obj.datasource.COG.toFixed(0) + "             航速：" + obj.datasource.SOG;
+        line = { type: "text", text: state, strokeWidth: 0.5, strokeStyle: '#CCC', globalAlpha: 0.8, fillStyle: "#000", path: [{ x: offset.x + w, y: offset.y + 4 * h }], fontSize: 12 };
+        ret.push(line);
+        line = { type: "text", text: "航行状态：" + obj.datasource.NavState, strokeWidth: 0.5, strokeStyle: '#CCC', globalAlpha: 0.8, fillStyle: "#000", path: [{ x: offset.x + w, y: offset.y + 5 * h }], fontSize: 12 };
+        ret.push(line);
+        line = { type: "text", text: "时间：" + obj.datasource.TimeStamp, strokeWidth: 0.5, strokeStyle: '#CCC', globalAlpha: 0.8, fillStyle: "#000", path: [{ x: offset.x + w, y: offset.y + 6 * h }], fontSize: 12 };
+        ret.push(line);
+        return ret;
+    };
+    function GetIconByVesselType(VT) {
+    	console.log(ret)
+        ret = "qt.png"
+        switch (VT) {
+            case "高速船":
+                ret = "gs.png";
+                break;
+            case "客船":
+                ret = "k.png";
+                break;
+            case "货船":
+                ret = "h.png";
+                break;
+            case "油船":
+                ret = "wxp.png";
+                break;
+            case "执法船", "引航船", "搜救船":
+                ret = "gw.png";
+                break;
+        }
+        return "../image/Resources/Ships/" + ret;
+    };
+
+</script>
+<script language="javascript" type="text/javascript">
+    function draw() {
+        var drawLayer = new Winfo.DNCLayer.dynamic({ index: 501, dataprocess: drawData });
+    };
+    function drawData() {
+        var ret = [];
+        var offset = {x:20,y:20};
+        var H = 205;
+        var W = 205;
+        var p1 = [{ x: offset.x, y: offset.y }, { x: offset.x + W, y: offset.y }, { x: offset.x + W, y: offset.y + H }, { x: offset.x, y: offset.y + H }];
+        var offset = { x: 130, y: 130 };
+        var H = 165;
+        var W = 165;
+        var p2 = [{ x: offset.x, y: offset.y }, { x: offset.x + W, y: offset.y }, { x: offset.x + W, y: offset.y + H }, { x: offset.x, y: offset.y + H }];
+        var offset = { x: 150, y: 150 };
+        var H = 35;
+        var W = 35;
+        var p3 = [{ x: offset.x, y: offset.y }, { x: offset.x + W, y: offset.y }, { x: offset.x + W, y: offset.y + H }, { x: offset.x, y: offset.y + H }];
+        var path = [p1, p2, p3];
+        var p = { type: "polypolygon", strokeWidth: 1, strokeStyle: '#CCC', fillStyle: "#ffffff", globalAlpha: 0.95, path: path };
+        ret.push(p);
+        return ret;
+    };
+</script>
+
