@@ -1,4 +1,4 @@
-# vue-music
+# vue.js开发音乐webApp
 
 > A Vue.js project
 
