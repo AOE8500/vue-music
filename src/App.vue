@@ -7,6 +7,7 @@
     </keep-alive>
     <my-player></my-player>
     <div></div>
+    <div></div>
   </div>
 </template>
 
