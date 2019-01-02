@@ -6,6 +6,7 @@
       <router-view></router-view>
     </keep-alive>
     <my-player></my-player>
+    <div></div>
   </div>
 </template>
 
